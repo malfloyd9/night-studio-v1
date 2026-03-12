@@ -50,60 +50,67 @@ export default function App() {
       <ClockHands />
 
       {/* ── L4: Room — window frame + desk surface ─────────── */}
-      <img src="/assets/Room_v1.png" className="asset-layer" alt="" draggable={false} />
+      <img src="/assets/Room_v1.png" className="asset-layer asset-room" alt="" draggable={false} />
 
       {/* ── L5: Desk objects ──────────────────────────────── */}
 
       <img
         src="/assets/Plant_v1.png"
-        className="asset-layer plant-sway"
+        className="asset-layer asset-desk plant-sway"
         alt="" draggable={false}
       />
 
       <img
         src="/assets/Lava_Lamp_v1.png"
-        className="asset-layer"
+        className="asset-layer asset-desk asset-lava"
         alt="" draggable={false}
       />
 
       <img
         src="/assets/Succulent_v1.png"
-        className="asset-layer"
+        className="asset-layer asset-desk"
         alt="" draggable={false}
       />
 
       <img
         src="/assets/Notebook_v1.png"
-        className="asset-layer"
+        className="asset-layer asset-desk asset-notebook"
         alt="" draggable={false}
       />
 
       <img
         src="/assets/Sticky_Note_v1.png"
-        className="asset-layer"
+        className="asset-layer asset-desk asset-sticky"
         alt="" draggable={false}
       />
 
       {/* Clock frame — hands render behind this */}
       <img
         src="/assets/Clock_v1.png"
-        className="asset-layer"
-        alt="" draggable={false}
+        className="asset-layer asset-desk asset-clock"
+        alt=""
+        draggable={false}
       />
 
       {/* Laptop — screen div renders behind this */}
       <img
         src="/assets/Laptop_v1.png"
-        className="asset-layer asset-near-lamp"
-        alt="" draggable={false}
+        className="asset-layer asset-desk asset-near-lamp"
+        alt=""
+        draggable={false}
       />
 
-      {/* Desk lamp — INTERACTIVE — click to toggle lamp state */}
+      {/* Desk lamp image (visual only) */}
       <img
         src="/assets/Desk_Lamp_v1.png"
-        className="asset-layer asset-lamp interactive"
+        className="asset-layer asset-lamp asset-desk-lamp"
         alt="Desk lamp"
         draggable={false}
+      />
+
+      {/* Small hitbox over lamp that handles clicks */}
+      <div
+        className="lamp-hitbox"
         onClick={handleLampToggle}
         title={lampOn ? 'Turn off lamp' : 'Turn on lamp'}
       />

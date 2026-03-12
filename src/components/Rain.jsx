@@ -1,7 +1,7 @@
 // Rain.jsx — painterly streaks, clipped to window region
 // 50 streaks, variable length / opacity / speed, 6deg lean
 
-const STREAK_COUNT = 50
+const STREAK_COUNT = 120
 
 function rand(min, max) {
   return Math.random() * (max - min) + min
@@ -11,9 +11,9 @@ export default function Rain() {
   const streaks = Array.from({ length: STREAK_COUNT }, (_, i) => ({
     id:       i,
     left:     rand(0, 100),
-    duration: rand(1.4, 2.6),
+    duration: rand(.4, 1.2),
     delay:    rand(0, 4.0),
-    height:   rand(8, 18),
+    height:   rand(10, 20),
     opacity:  rand(0.3, 0.6),
   }))
 
