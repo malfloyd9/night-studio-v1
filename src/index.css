@@ -1,0 +1,78 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body, #root { width: 100%; height: 100%; overflow: hidden; background: #000; }
+
+.scene-root { position: relative; width: 100vw; height: 100vh; overflow: hidden; transition: transform 0.5s ease; }
+.scene-window-emphasis { transform: scale(1.03) translateY(-2%); }
+
+.asset-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
+.asset-layer.interactive { pointer-events: auto; cursor: pointer; }
+
+.scene-lit .asset-layer { filter: brightness(1.0); transition: filter 1.2s ease; }
+.scene-lit .asset-near-lamp { filter: brightness(1.0) drop-shadow(0 0 12px rgba(255,175,60,0.3)); transition: filter 1.2s ease; }
+.scene-dim .asset-layer { filter: brightness(0.55); transition: filter 1.2s ease; }
+.scene-dim .asset-near-lamp { filter: brightness(0.55); transition: filter 1.2s ease; }
+.scene-lit .asset-lamp, .scene-dim .asset-lamp { filter: brightness(1.0) !important; transition: filter 1.2s ease; }
+
+.lamp-warm-overlay {
+  position: absolute; inset: 0; pointer-events: none;
+  background: radial-gradient(ellipse 65% 50% at 22% 88%, rgba(255,175,60,0.14) 0%, rgba(255,150,40,0.07) 45%, transparent 72%);
+  transition: opacity 1.2s ease;
+}
+.desk-dim-overlay { position: absolute; inset: 0; pointer-events: none; background: rgba(6,8,18,0.52); transition: opacity 1.2s ease; }
+
+.rain-window-clip {
+  position: absolute;
+  top: 0%; left: 5.5%; width: 89%; height: 82%;
+  overflow: hidden; pointer-events: none;
+}
+.rain-container { position: absolute; inset: 0; pointer-events: none; filter: blur(0.4px); }
+.rain-streak {
+  position: absolute; top: -18px; width: 1px; border-radius: 0 0 50% 50%;
+  background: linear-gradient(to bottom, transparent 0%, rgba(200,210,225,0.42) 100%);
+  transform: rotate(6deg);
+  animation: rain-fall linear infinite;
+}
+@keyframes rain-fall {
+  0%   { transform: rotate(6deg) translateY(-18px); opacity: 0; }
+  6%   { opacity: 1; }
+  88%  { opacity: 0.55; }
+  100% { transform: rotate(6deg) translateY(100vh); opacity: 0; }
+}
+
+.laptop-screen {
+  position: absolute;
+  top: 50.5%; left: 36.8%; width: 19.5%; height: 15.5%;
+  background: #0a0f1c; border-radius: 2px;
+  display: flex; align-items: center; justify-content: center;
+  pointer-events: none;
+}
+.cursor-blink { width: 2px; height: 16px; background: rgba(120,170,255,0.7); border-radius: 1px; animation: cursor-blink 1.2s step-end infinite; }
+@keyframes cursor-blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+
+.clock-face {
+  position: absolute;
+  top: 26%; left: 78.5%; width: 3.6%; height: 6.4%;
+  pointer-events: none;
+}
+.clock-hand { position: absolute; bottom: 50%; left: 50%; transform-origin: bottom center; background: #c8b89a; border-radius: 2px 2px 0 0; }
+.clock-hand-hour { width: 2px; height: 28%; margin-left: -1px; }
+.clock-hand-minute { width: 1.5px; height: 38%; margin-left: -0.75px; }
+
+.lava-lamp-glow {
+  position: absolute;
+  top: 55%; left: 86%; width: 4%; height: 12%;
+  pointer-events: none; transition: opacity 1.2s ease;
+}
+.lava-glow-inner {
+  width: 100%; height: 100%; border-radius: 40% 40% 50% 50%;
+  background: radial-gradient(ellipse at 50% 60%, rgba(200,100,220,0.55) 0%, rgba(160,60,200,0.3) 50%, transparent 80%);
+  animation: lava-pulse 4s ease-in-out infinite;
+}
+@keyframes lava-pulse { 0%, 100% { opacity: 0.7; transform: scaleY(1); } 50% { opacity: 1.0; transform: scaleY(1.06); } }
+
+.plant-sway { animation: plant-sway 7s ease-in-out infinite; transform-origin: top center; }
+@keyframes plant-sway { 0%, 100% { transform: rotate(-0.8deg); } 50% { transform: rotate(0.8deg); } }
