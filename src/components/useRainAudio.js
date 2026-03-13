@@ -1,37 +1,56 @@
 // useRainAudio.js — Howler scaffold
 // Drop rain.mp3 into /public/audio/ to activate
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Howl } from 'howler'
 
-const VOLUME_ON  = 0.5
-const VOLUME_OFF = 0.75
-const FADE_MS    = 1200
+const DEFAULT_VOLUME = 0.6
+const FADE_MS        = 1200
 
-export default function useRainAudio(lampOn) {
+export default function useRainAudio() {
   const rainRef    = useRef(null)
   const startedRef = useRef(false)
+  const [isOn, setIsOn]       = useState(false)
+  const [volume, setVolume]   = useState(DEFAULT_VOLUME)
 
   useEffect(() => {
     rainRef.current = new Howl({
-      src: ['/audio/rain.mp3'],
+      src: ['/audio/Rain_v1.mp3'],
       loop: true,
-      volume: VOLUME_ON,
-      onloaderror: (id, err) => console.warn('[Night Studio] rain.mp3 missing — drop into /public/audio/', err),
+      volume: 0,
+      onloaderror: (id, err) => console.warn('[Night Studio] Rain_v1.mp3 missing — drop into /public/audio/', err),
     })
     return () => rainRef.current?.unload()
   }, [])
 
-  const start = () => {
-    if (startedRef.current) return
+  useEffect(() => {
+    if (!rainRef.current) return
+    rainRef.current.volume(volume)
+  }, [volume])
+
+  const ensureStarted = () => {
+    if (startedRef.current || !rainRef.current) return
     startedRef.current = true
-    rainRef.current?.play()
+    rainRef.current.play()
   }
 
-  useEffect(() => {
-    if (!rainRef.current || !startedRef.current) return
-    const target = lampOn ? VOLUME_ON : VOLUME_OFF
-    rainRef.current.fade(rainRef.current.volume(), target, FADE_MS)
-  }, [lampOn])
+  const toggleOnOff = () => {
+    if (!rainRef.current) return
+    ensureStarted()
+    if (!isOn) {
+      rainRef.current.fade(rainRef.current.volume(), volume, FADE_MS)
+      setIsOn(true)
+    } else {
+      rainRef.current.fade(rainRef.current.volume(), 0, FADE_MS)
+      setIsOn(false)
+    }
+  }
 
-  return { start }
+  const changeVolume = (next) => {
+    const v = Math.min(1, Math.max(0, next))
+    setVolume(v)
+    if (!rainRef.current || !isOn) return
+    rainRef.current.fade(rainRef.current.volume(), v, FADE_MS)
+  }
+
+  return { isOn, volume, toggleOnOff, changeVolume, start: ensureStarted }
 }

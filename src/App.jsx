@@ -12,10 +12,9 @@ import useRainAudio   from './components/useRainAudio'
 
 export default function App() {
   const [lampOn, setLampOn] = useState(true)
-  const { start } = useRainAudio(lampOn)
+  const { start, isOn: rainOn, volume: rainVolume, toggleOnOff: toggleRain, changeVolume } = useRainAudio()
 
   const handleLampToggle = () => {
-    start()
     setLampOn(v => !v)
   }
 
@@ -122,6 +121,21 @@ export default function App() {
 
       {/* Cool dark wash — lamp OFF */}
       <div className="desk-dim-overlay" style={{ opacity: lampOn ? 0 : 1 }} />
+
+      {/* Rain audio controls (simple overlay) */}
+      <div className="rain-controls" onClick={e => e.stopPropagation()}>
+        <button type="button" onClick={toggleRain}>
+          {rainOn ? 'Rain: On' : 'Rain: Off'}
+        </button>
+        <input
+          type="range"
+          min="0"
+          max="1"
+          step="0.05"
+          value={rainVolume}
+          onChange={e => changeVolume(parseFloat(e.target.value))}
+        />
+      </div>
 
     </div>
   )
