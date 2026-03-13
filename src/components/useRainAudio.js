@@ -37,7 +37,9 @@ export default function useRainAudio() {
     if (!rainRef.current) return
     ensureStarted()
     if (!isOn) {
-      rainRef.current.fade(rainRef.current.volume(), volume, FADE_MS)
+      const target = volume === 0 ? DEFAULT_VOLUME : volume
+      if (volume === 0) setVolume(DEFAULT_VOLUME)
+      rainRef.current.fade(rainRef.current.volume(), target, FADE_MS)
       setIsOn(true)
     } else {
       rainRef.current.fade(rainRef.current.volume(), 0, FADE_MS)
