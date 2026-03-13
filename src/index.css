@@ -2,6 +2,25 @@
 @tailwind components;
 @tailwind utilities;
 
+.root, :root {
+  /* Laptop screen fine-tuning controls (x, y) */
+  --laptop-screen-top: 59%;
+  --laptop-screen-left: 37%;
+  --laptop-screen-translate-x: 0%;
+  --laptop-screen-translate-y: 8%;
+  --laptop-screen-width: 21.5%;
+  --laptop-screen-height: 27%;
+  /* Laptop screen corner controls (within its own box; can exceed 100% to overshoot edges) */
+  --laptop-screen-tl-x: 4%;
+  --laptop-screen-tl-y: 10%;
+  --laptop-screen-tr-x: 90%;
+  --laptop-screen-tr-y: 5%;
+  --laptop-screen-br-x: 98%;
+  --laptop-screen-br-y: 80%;
+  --laptop-screen-bl-x: 12%;
+  --laptop-screen-bl-y: 93%;
+}
+
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 html, body, #root { width: 100%; height: 100%; overflow: hidden; background: #000; }
 
@@ -34,7 +53,7 @@ body {
 .rain-window-clip { z-index: 5; }
 .asset-room { z-index: 10; }
 .lava-lamp-glow,
-.laptop-screen { z-index: 20; }
+.laptop-screen { z-index: 25; }
 .asset-desk { z-index: 30; }
 .asset-lamp { z-index: 40; }
 /* Clickable region for the lamp toggle (separate from the lamp image) */
@@ -64,7 +83,14 @@ body {
   background: radial-gradient(ellipse 65% 50% at 22% 88%, rgba(255,175,60,0.14) 0%, rgba(255,150,40,0.07) 45%, transparent 72%);
   transition: opacity 1.2s ease;
 }
-.desk-dim-overlay { position: absolute; inset: 0; pointer-events: none; background: rgba(6,8,18,0.52); transition: opacity 1.2s ease; }
+.desk-dim-overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: rgba(6,8,18,0.52);
+  z-index: 45; /* above all desk objects (including lamp) but below UI overlays like laptop screen */
+  transition: opacity 1.2s ease;
+}
 
 .rain-window-clip {
   position: absolute;
@@ -88,13 +114,20 @@ body {
 .laptop-screen {
   position: absolute;
   /* Adjusted down slightly to better sit inside angled laptop */
-  top: 59%; left: 37%; width: 19.5%; height: 23%;
+  top: var(--laptop-screen-top);
+  left: var(--laptop-screen-left);
+  width: var(--laptop-screen-width);
+  height: var(--laptop-screen-height);
   background: #0a0f1c;-radius: 2px;
   display: flex; align-items: center; justify-content: center;
   pointer-events: none;
-  /* Approximate laptop perspective: left side down/in */
-  transform-origin: top left;
-  transform: skewX(9.4deg) translateY(8%);
+  /* Screen quad defined by 4 corner points within this box (0–100%) */
+  clip-path: polygon(
+    var(--laptop-screen-tl-x) var(--laptop-screen-tl-y),
+    var(--laptop-screen-tr-x) var(--laptop-screen-tr-y),
+    var(--laptop-screen-br-x) var(--laptop-screen-br-y),
+    var(--laptop-screen-bl-x) var(--laptop-screen-bl-y)
+  );
   /* TEMP debug: visualize laptop screen rect against PNG */
   outline: 0px solid rgba(120,170,255,0.7);
 }
@@ -173,6 +206,30 @@ body {
 .asset-desk-lamp {
   transform-origin: top left;
   transform: translate(3%, 1%);
+}
+
+.lamp-bulb-glow {
+  position: absolute;
+  /* Approximate bulb position over the desk lamp */
+  top: 24%;
+  left: 24%;
+  width: 26%;
+  height: 36%;
+  pointer-events: none;
+  z-index: 48; /* above lamp image, below laptop / UI overlays */
+  background:
+    radial-gradient(ellipse 75% 160% at 50% 8%,
+      rgba(255, 191, 0, 0.40) 0%,
+      rgba(255, 191, 0, 0.28) 18%,
+      rgba(255, 191, 0, 0.16) 36%,
+      rgba(255, 191, 0, 0.06) 55%,
+      transparent 82%);
+  filter: blur(10px);
+  mix-blend-mode: screen;
+  transform-origin: 20% 0%;
+  transform: rotate(135deg);
+  transition: opacity 1s ease;
+  opacity: 0;
 }
 
 .rain-controls {

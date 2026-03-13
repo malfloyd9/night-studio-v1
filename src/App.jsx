@@ -107,6 +107,12 @@ export default function App() {
         draggable={false}
       />
 
+      {/* Lit bulb glow when lamp is on */}
+      <div
+        className="lamp-bulb-glow"
+        style={{ opacity: lampOn ? 1 : 0 }}
+      />
+
       {/* Small hitbox over lamp that handles clicks */}
       <div
         className="lamp-hitbox"
