@@ -2,7 +2,13 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Reflect Mode (lamp off) camera — adjust view pan/zoom here */
 .root, :root {
+  --window-emphasis-scale: 1.03;
+  --window-emphasis-translate-y: -4%;   /* negative = pan UP toward skyline */
+  --window-emphasis-origin-y: 20%;       /* pivot: 20% = upper, 50% = center */
+  --window-emphasis-duration: 1.4s;
+
   /* Laptop screen fine-tuning controls (x, y) */
   --laptop-screen-top: 59%;
   --laptop-screen-left: 37%;
@@ -19,6 +25,12 @@
   --laptop-screen-br-y: 80%;
   --laptop-screen-bl-x: 12%;
   --laptop-screen-bl-y: 93%;
+
+  /* Lava lamp: position and size (scene is 16:9; values in % of scene) */
+  --lava-lamp-top: 47%;
+  --lava-lamp-left: 75.2%;
+  --lava-lamp-width: 8.5%;
+  --lava-lamp-height: 26%;
 }
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -36,25 +48,27 @@ body {
   aspect-ratio: 16 / 9;
   height: auto;
   overflow: hidden;
-  transition: transform 0.5s ease;
+  transition: transform var(--window-emphasis-duration) ease-in-out;
+  transform-origin: 50% 50%;
 }
-.scene-window-emphasis { transform: scale(1.03) translateY(-2%); }
+.scene-window-emphasis { }
+
+/* Reflect Mode: zoom and pan toward window/skyline */
+.scene-root.scene-window-emphasis {
+  transform-origin: 50% var(--window-emphasis-origin-y);
+  transform: scale(var(--window-emphasis-scale)) translateY(var(--window-emphasis-translate-y));
+}
 
 .asset-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
 .asset-layer.interactive { pointer-events: auto; cursor: pointer; }
 
-/* Explicit stacking:
- *  - city view (default asset-layer) at base
- *  - rain just above city but behind room
- *  - room surface above city + rain
- *  - live overlays (lava glow, laptop screen, clock) above room
- *  - desk objects (plant, lamp, clock frame, laptop PNG, etc.) above overlays
+/* Z-index: L1 city (base), L2 rain (5), L3 room (10), blobs (24) & laptop (25) behind their PNGs,
+ *  L4 desk objects (30), clock face/hands (31–32), clock PNG (33), lamp (40), lamp UI (44–45)
  */
 .rain-window-clip { z-index: 5; }
-.asset-room { z-index: 10; }
-.lava-lamp-glow,
-.laptop-screen { z-index: 25; }
-.asset-desk { z-index: 30; }
+.asset-room { z-index: 10; }   /* Layer 3: desk base */
+.laptop-screen { z-index: 25; } /* behind laptop PNG (30) */
+.asset-desk { z-index: 30; }   /* Layer 4: desk objects (plant, lamp PNG, clock PNG, etc.) */
 .asset-lamp { z-index: 40; }
 /* Clickable region for the lamp toggle (separate from the lamp image) */
 .lamp-hitbox {
@@ -72,24 +86,24 @@ body {
   transform: translate(0%, 14%);
 }
 
-.scene-lit .asset-layer { filter: brightness(1.0); transition: filter 1.2s ease; }
-.scene-lit .asset-near-lamp { filter: brightness(1.0) drop-shadow(0 0 12px rgba(255,175,60,0.3)); transition: filter 1.2s ease; }
-.scene-dim .asset-layer { filter: brightness(0.55); transition: filter 1.2s ease; }
-.scene-dim .asset-near-lamp { filter: brightness(0.55); transition: filter 1.2s ease; }
-.scene-lit .asset-lamp, .scene-dim .asset-lamp { filter: brightness(1.0) !important; transition: filter 1.2s ease; }
+/* Selective darkening: CSS filters on L3/L4 only when lamp OFF; L1 (city) and L2 (rain) stay bright */
+.scene-lit .asset-room,
+.scene-lit .asset-desk,
+.scene-lit .asset-lamp { filter: brightness(1) saturate(1); transition: filter 1s ease; }
+.scene-lit .asset-near-lamp { filter: brightness(1) drop-shadow(0 0 12px rgba(255,175,60,0.3)); transition: filter 1s ease; }
+.scene-dim .asset-room,
+.scene-dim .asset-desk,
+.scene-dim .asset-lamp { filter: brightness(0.4) saturate(0.8); transition: filter 1s ease; }
 
+/* Warm overlay: lamp ON only; desk-only clip; 1000ms transition */
 .lamp-warm-overlay {
-  position: absolute; inset: 0; pointer-events: none;
-  background: radial-gradient(ellipse 65% 50% at 22% 88%, rgba(255,175,60,0.14) 0%, rgba(255,150,40,0.07) 45%, transparent 72%);
-  transition: opacity 1.2s ease;
-}
-.desk-dim-overlay {
   position: absolute;
   inset: 0;
   pointer-events: none;
-  background: rgba(6,8,18,0.52);
-  z-index: 45; /* above all desk objects (including lamp) but below UI overlays like laptop screen */
-  transition: opacity 1.2s ease;
+  background: radial-gradient(ellipse 65% 50% at 22% 88%, rgba(255,175,60,0.14) 0%, rgba(255,150,40,0.07) 45%, transparent 72%);
+  transition: opacity 1s ease;
+  z-index: 44;
+  clip-path: polygon(0 0, 5.5% 0, 5.5% 82%, 94.5% 82%, 94.5% 0, 100% 0, 100% 100%, 0 100%);
 }
 
 .rain-window-clip {
@@ -151,7 +165,7 @@ body {
 .asset-clock {
   transform-origin: top left;
   transform: translate(-4%, 5%);
-  z-index: 33; /* clock PNG frame above face + hands */
+  z-index: 33; /* above clock face (31) and hands (32) */
 }
 
 .clock-face {
@@ -190,46 +204,154 @@ body {
   transform: translate(-8.5%, 2%);
 }
 
-.lava-lamp-glow {
+/* Lava lamp blobs: behind lamp PNG (z 24); glow exception so they stay bright and emit light in Reflect Mode */
+.lava-lamp-blobs {
   position: absolute;
-  top: 50%; left: 75.2%; width: 8%; height: 21%;
+  top: var(--lava-lamp-top);
+  left: var(--lava-lamp-left);
+  width: var(--lava-lamp-width);
+  height: var(--lava-lamp-height);
+  z-index: 24; /* inside/behind lava lamp PNG (asset-desk 30) */
+  overflow: hidden;
+  border-radius: 40% 40% 50% 50%;
+  transition: opacity 1s ease;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  cursor: pointer;
+  pointer-events: auto;
+  filter: brightness(1.2) drop-shadow(0 0 10px rgba(0, 255, 200, 0.5));
+}
+.lava-lamp__svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
   pointer-events: none;
-  transition: opacity 1.2s ease;
+  overflow: hidden;
+  border-radius: inherit;
 }
-.lava-glow-inner {
-  width: 100%; height: 100%; border-radius: 40% 40% 50% 50%;
-  background: radial-gradient(ellipse at 50% 60%, rgba(200,100,220,0.55) 0%, rgba(160,60,200,0.3) 50%, transparent 80%);
-  animation: lava-pulse 4s ease-in-out infinite;
+.lava-lamp__lava {
+  width: 100%;
+  height: 100%;
 }
-@keyframes lava-pulse { 0%, 100% { opacity: 0.7; transform: scaleY(1); } 50% { opacity: 1.0; transform: scaleY(1.06); } }
+/* Blob: glass-contained wax — slight transparency; LofiLamp-style rise + sway */
+.blob {
+  --wobble: 10px;
+  fill: var(--lava-fill, #4bff91);
+  opacity: 0.8;
+  transform-box: fill-box;
+  transform-origin: center center;
+  animation: blob-rise calc(var(--speed) * 1s) ease-in-out infinite;
+  animation-delay: calc(var(--delay) * 1s);
+  animation-direction: var(--direction, normal);
+}
+/* Anchor blobs (pool/top): only horizontal sway, no rise */
+.blob--anchor {
+  animation: blob-sway 22s ease-in-out infinite;
+  animation-delay: calc(var(--sway-delay, 0) * 1s);
+}
+/* Glow layer blobs: same animation, more transparent so blur reads as glow */
+.lava-lamp__glow .blob {
+  opacity: 0.6;
+}
+/* Rise + sway in one: form → rise → hot → cooling stretch → fall; X from --wobble so blobs drift and overlap (merge) then separate (split) */
+@keyframes blob-rise {
+  0%, 100% { transform: translate(0, 0) scale(1.1, 0.28); }
+  12% { transform: translate(calc(var(--wobble) * 0.2), 0) scale(1.06, 0.42); }
+  24% { transform: translate(calc(var(--wobble) * -0.3), 0) scale(1.02, 0.58); }
+  36% { transform: translate(calc(var(--wobble) * 0.1), 0) scale(1, 0.74); }
+  46% { transform: translate(calc(var(--wobble) * -0.2), 0) scale(0.98, 0.92); }
+  50% { transform: translate(0, 10px) scale(0.97, 0.96); }
+  52% { transform: translate(calc(var(--wobble) * 0.4), -5px) scale(1.18, 1.18); }
+  58% { transform: translate(calc(var(--wobble) * -0.6), -200px) scale(1.2, 1.2); }
+  64% { transform: translate(calc(var(--wobble) * 0.3), -320px) scale(1.26, 1.26); }
+  70% { transform: translate(0, -400px) scale(1.32, 1.32); }
+  76% { transform: translate(calc(var(--wobble) * 0.25), -395px) scale(1.05, 1.48); }
+  80% { transform: translate(calc(var(--wobble) * -0.5), -340px) scale(1.08, 1.35); }
+  85% { transform: translate(calc(var(--wobble) * 0.5), -200px) scale(1.12, 1.12); }
+  91% { transform: translate(calc(var(--wobble) * -0.2), -60px) scale(1.08, 0.7); }
+  95% { transform: translate(0, -15px) scale(1.06, 0.45); }
+}
+/* Anchor blobs: sway only so they act as merge points at pool/top */
+@keyframes blob-sway {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(var(--wobble, 10px)); }
+  75% { transform: translateX(calc(-1 * var(--wobble, 10px))); }
+}
+/* Color selection strip: hidden by default, toggled by click on lamp */
+.lava-lamp-colors {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  gap: 3px;
+  padding: 4px 6px;
+  margin-bottom: 2px;
+  pointer-events: auto;
+  animation: lava-picker-in 0.2s ease-out;
+}
+@keyframes lava-picker-in {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.lava-lamp-color-btn {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 1px solid rgba(255,255,255,0.3);
+  cursor: pointer;
+  padding: 0;
+  flex-shrink: 0;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.lava-lamp-color-btn:hover {
+  transform: scale(1.2);
+}
+.lava-lamp-color-btn.active {
+  border-color: rgba(255,255,255,0.9);
+  box-shadow: 0 0 8px currentColor;
+}
+/* Diegetic lighting: subtle glow on desk surface under lava lamp when main lamp is OFF */
+.lava-blob-ambient {
+  position: absolute;
+  top: var(--lava-lamp-top);
+  left: var(--lava-lamp-left);
+  width: calc(var(--lava-lamp-width) * 3);
+  height: calc(var(--lava-lamp-height) * 1.8);
+  margin-left: calc(-1 * var(--lava-lamp-width));
+  margin-top: calc(var(--lava-lamp-height) * 0.15);
+  pointer-events: none;
+  z-index: 29; /* above room (10) and blobs (24), below desk objects (30) — on desk surface */
+  border-radius: 50%;
+  background: radial-gradient(ellipse 70% 80% at 50% 60%,
+    rgba(0, 255, 200, 0.12) 0%,
+    rgba(0, 255, 220, 0.06) 45%,
+    transparent 75%);
+  mix-blend-mode: screen;
+  filter: blur(12px);
+  transition: opacity 1s ease;
+}
 
 .asset-desk-lamp {
   transform-origin: top left;
   transform: translate(3%, 1%);
 }
 
-.lamp-bulb-glow {
-  position: absolute;
-  /* Approximate bulb position over the desk lamp */
-  top: 24%;
-  left: 24%;
-  width: 26%;
-  height: 36%;
-  pointer-events: none;
-  z-index: 48; /* above lamp image, below laptop / UI overlays */
-  background:
-    radial-gradient(ellipse 75% 160% at 50% 8%,
-      rgba(255, 191, 0, 0.40) 0%,
-      rgba(255, 191, 0, 0.28) 18%,
-      rgba(255, 191, 0, 0.16) 36%,
-      rgba(255, 191, 0, 0.06) 55%,
-      transparent 82%);
-  filter: blur(10px);
-  mix-blend-mode: screen;
-  transform-origin: 20% 0%;
-  transform: rotate(135deg);
+/* Bulb image: shown when lamp on, completely hidden when off; 1000ms transition */
+.asset-lamp-bulb {
+  transform-origin: top left;
+  transform: translate(-1%, 1%);
+  z-index: 41; /* above lamp base */
   transition: opacity 1s ease;
+}
+.scene-lit .asset-lamp-bulb {
+  opacity: 1;
+  filter: brightness(1) saturate(1);
+}
+.scene-dim .asset-lamp-bulb {
   opacity: 0;
+  pointer-events: none;
 }
 
 .rain-controls {

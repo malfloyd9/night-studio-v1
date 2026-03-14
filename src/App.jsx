@@ -8,6 +8,7 @@
 import { useState }   from 'react'
 import Rain           from './components/Rain'
 import ClockHands     from './components/ClockHands'
+import LavaLamp       from './components/LavaLamp'
 import useRainAudio   from './components/useRainAudio'
 
 export default function App() {
@@ -27,16 +28,20 @@ export default function App() {
   return (
     <div className={sceneClass} onClick={start}>
 
-      {/* ── L1: City view — behind window ─────────────────── */}
-      <img src="/assets/View_v1.png" className="asset-layer" alt="" draggable={false} />
+      {/* ── L1: City view — behind window (never dimmed for Reflect Mode) ─────────────────── */}
+      <img src="/assets/View_v2.png" className="asset-layer asset-city" alt="" draggable={false} />
 
       {/* ── L2: Rain — clipped to window opening ──────────── */}
       <Rain />
 
-      {/* ── L3a: Lava lamp interior glow (behind PNG) ──────── */}
-      <div className="lava-lamp-glow" style={{ opacity: lampOn ? 1 : 0.4 }}>
-        <div className="lava-glow-inner" />
-      </div>
+      {/* ── L3a: Lava lamp blobs (behind lamp PNG); glow exception in Reflect Mode ──────── */}
+      <LavaLamp lampOn={lampOn} />
+      {/* Reflect Mode: blobs light the desk around the lamp via screen blend */}
+      <div
+        className="lava-blob-ambient"
+        style={{ opacity: lampOn ? 0 : 1 }}
+        aria-hidden
+      />
 
       {/* ── L3b: Laptop screen div (behind PNG cutout) ─────── */}
       {/* Tune: top / left / width / height in Claude Code      */}
@@ -107,9 +112,12 @@ export default function App() {
         draggable={false}
       />
 
-      {/* Lit bulb glow when lamp is on */}
-      <div
-        className="lamp-bulb-glow"
+      {/* Lit bulb asset + glow — only when lamp is on */}
+      <img
+        src="/assets/Lightbulb_v1.png"
+        className="asset-layer asset-lamp asset-lamp-bulb"
+        alt=""
+        draggable={false}
         style={{ opacity: lampOn ? 1 : 0 }}
       />
 
@@ -122,11 +130,8 @@ export default function App() {
 
       {/* ── L6: Lighting overlays ─────────────────────────── */}
 
-      {/* Warm amber pool — lamp ON */}
+      {/* Warm amber pool — lamp ON only; hidden when lamp OFF */}
       <div className="lamp-warm-overlay" style={{ opacity: lampOn ? 1 : 0 }} />
-
-      {/* Cool dark wash — lamp OFF */}
-      <div className="desk-dim-overlay" style={{ opacity: lampOn ? 0 : 1 }} />
 
       {/* Rain audio controls (simple overlay) */}
       <div className="rain-controls" onClick={e => e.stopPropagation()}>
