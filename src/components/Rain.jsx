@@ -1,5 +1,5 @@
-// Rain.jsx — painterly streaks, clipped to window region
-// 50 streaks, variable length / opacity / speed, 6deg lean
+// Rain.jsx — visible in both desk (window clip) and laptop zoom (between BG and View)
+// SFX is in App (useRainAudio); this component only handles visuals
 
 const STREAK_COUNT = 120
 
@@ -7,7 +7,7 @@ function rand(min, max) {
   return Math.random() * (max - min) + min
 }
 
-export default function Rain() {
+export default function Rain({ zoomed = false, zoomLayerReveal = false }) {
   const streaks = Array.from({ length: STREAK_COUNT }, (_, i) => ({
     id:       i,
     left:     rand(0, 100),
@@ -17,8 +17,10 @@ export default function Rain() {
     opacity:  rand(0.3, 0.6),
   }))
 
+  const clipClass = 'rain-window-clip' + (zoomed ? ' rain-zoomed' : '') + (zoomed && zoomLayerReveal ? ' rain-zoomed-visible' : '')
+
   return (
-    <div className="rain-window-clip">
+    <div className={clipClass}>
       <div className="rain-container">
         {streaks.map(s => (
           <div

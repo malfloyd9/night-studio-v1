@@ -8,16 +8,20 @@ const FADE_MS        = 1200
 
 export default function useRainAudio() {
   const rainRef    = useRef(null)
-  const startedRef = useRef(false)
   const [isOn, setIsOn]       = useState(false)
   const [volume, setVolume]   = useState(DEFAULT_VOLUME)
 
   useEffect(() => {
     rainRef.current = new Howl({
-      src: ['/audio/Rain_v1.mp3'],
-      loop: true,
-      volume: 0,
-      onloaderror: (id, err) => console.warn('[Night Studio] Rain_v1.mp3 missing — drop into /public/audio/', err),
+      src:     ['/audio/Rain_v1.mp3'],
+      format:  ['mp3'],
+      loop:    true,
+      volume:  0,
+      html5:   true, // use HTML5 <audio> to avoid Web Audio decode issues
+      preload: true,
+      onloaderror: (id, err) => {
+        console.warn('[Night Studio] Rain_v1.mp3 load error — check /public/audio/Rain_v1.mp3', err)
+      },
     })
     return () => rainRef.current?.unload()
   }, [])
@@ -28,9 +32,10 @@ export default function useRainAudio() {
   }, [volume])
 
   const ensureStarted = () => {
-    if (startedRef.current || !rainRef.current) return
-    startedRef.current = true
-    rainRef.current.play()
+    if (!rainRef.current) return
+    if (!rainRef.current.playing()) {
+      rainRef.current.play()
+    }
   }
 
   const toggleOnOff = () => {

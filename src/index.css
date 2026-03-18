@@ -9,28 +9,12 @@
   --window-emphasis-origin-y: 20%;       /* pivot: 20% = upper, 50% = center */
   --window-emphasis-duration: 1.4s;
 
-  /* Laptop screen fine-tuning controls (x, y) */
-  --laptop-screen-top: 59%;
-  --laptop-screen-left: 37%;
-  --laptop-screen-translate-x: 0%;
-  --laptop-screen-translate-y: 8%;
-  --laptop-screen-width: 21.5%;
-  --laptop-screen-height: 27%;
-  /* Laptop screen corner controls (within its own box; can exceed 100% to overshoot edges) */
-  --laptop-screen-tl-x: 4%;
-  --laptop-screen-tl-y: 10%;
-  --laptop-screen-tr-x: 90%;
-  --laptop-screen-tr-y: 5%;
-  --laptop-screen-br-x: 98%;
-  --laptop-screen-br-y: 80%;
-  --laptop-screen-bl-x: 12%;
-  --laptop-screen-bl-y: 93%;
-
   /* Lava lamp: position and size (scene is 16:9; values in % of scene) */
   --lava-lamp-top: 47%;
   --lava-lamp-left: 75.2%;
   --lava-lamp-width: 8.5%;
   --lava-lamp-height: 26%;
+
 }
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -44,10 +28,11 @@ body {
 
 .scene-root {
   position: relative;
-  width: min(100vw, 177.78vh);  /* 16:9 canvas, fits viewport width/height */
+  width: min(100vw, 177.78vh);
   aspect-ratio: 16 / 9;
   height: auto;
   overflow: hidden;
+  background: #0c0e14; /* fallback when desk unmounted; wallpaper (z-1) and rain (z-2) sit above */
   transition: transform var(--window-emphasis-duration) ease-in-out;
   transform-origin: 50% 50%;
 }
@@ -62,13 +47,14 @@ body {
 .asset-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
 .asset-layer.interactive { pointer-events: auto; cursor: pointer; }
 
-/* Z-index: L1 city (base), L2 rain (5), L3 room (10), blobs (24) & laptop (25) behind their PNGs,
- *  L4 desk objects (30), clock face/hands (31–32), clock PNG (33), lamp (40), lamp UI (44–45)
- */
-.rain-window-clip { z-index: 5; }
-.asset-room { z-index: 10; }   /* Layer 3: desk base */
-.laptop-screen { z-index: 25; } /* behind laptop PNG (30) */
-.asset-desk { z-index: 30; }   /* Layer 4: desk objects (plant, lamp PNG, clock PNG, etc.) */
+.asset-city { z-index: 1; }
+/* Desk: rain between city (1) and room (10) (10) so it’s visible in the window */
+.rain-window-clip {
+  z-index: 5;
+  opacity: 1;
+}
+.asset-room { z-index: 10; }
+.asset-desk { z-index: 30; }
 .asset-lamp { z-index: 40; }
 /* Clickable region for the lamp toggle (separate from the lamp image) */
 .lamp-hitbox {
@@ -106,10 +92,23 @@ body {
   clip-path: polygon(0 0, 5.5% 0, 5.5% 82%, 94.5% 82%, 94.5% 0, 100% 0, 100% 100%, 0 100%);
 }
 
+/* (Desk darkness remains controlled by scene-dim filters above; laptop darkness handled on Laptop_View images below) */
+
 .rain-window-clip {
   position: absolute;
   top: 0%; left: 5.5%; width: 89%; height: 82%;
-  overflow: hidden; pointer-events: none;
+  overflow: hidden;
+  pointer-events: none;
+}
+/* Laptop zoom: rain between BG (98) and View (100), same fade-in timing */
+.rain-window-clip.rain-zoomed {
+  top: 0; left: 0; width: 100%; height: 100%;
+  z-index: 99;
+  opacity: 0;
+}
+.rain-window-clip.rain-zoomed.rain-zoomed-visible {
+  opacity: 1;
+  transition: opacity 1.2s cubic-bezier(0.4, 0, 0.2, 1) 600ms;
 }
 .rain-container { position: absolute; inset: 0; pointer-events: none; filter: blur(0.4px); }
 .rain-streak {
@@ -125,37 +124,208 @@ body {
   100% { transform: rotate(6deg) translateY(100vh); opacity: 0; }
 }
 
-.laptop-screen {
+/* laptop-screen overlay removed; baked into Laptop_Angle_Screen_v1 */
+
+/* Phase 1: Anchored Pivot — same full-canvas coordinates so bases sit on desk (no scaling) */
+.laptop-pivot-wrap {
   position: absolute;
-  /* Adjusted down slightly to better sit inside angled laptop */
-  top: var(--laptop-screen-top);
-  left: var(--laptop-screen-left);
-  width: var(--laptop-screen-width);
-  height: var(--laptop-screen-height);
-  background: #0a0f1c;-radius: 2px;
-  display: flex; align-items: center; justify-content: center;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 30;
   pointer-events: none;
-  /* Screen quad defined by 4 corner points within this box (0–100%) */
-  clip-path: polygon(
-    var(--laptop-screen-tl-x) var(--laptop-screen-tl-y),
-    var(--laptop-screen-tr-x) var(--laptop-screen-tr-y),
-    var(--laptop-screen-br-x) var(--laptop-screen-br-y),
-    var(--laptop-screen-bl-x) var(--laptop-screen-bl-y)
-  );
-  /* TEMP debug: visualize laptop screen rect against PNG */
-  outline: 0px solid rgba(120,170,255,0.7);
 }
-.cursor-blink {
+/* Hitbox: only this area triggers the laptop transition; background/wallpaper clicks do nothing */
+.laptop-pivot-hitbox {
   position: absolute;
-  left: 10%;
-  top: 40%;
-  width: 2px;
-  height: 10px;
-  background: #ffd37a;
-  border-radius: 1px;
-  animation: cursor-blink 1.2s step-end infinite;
+  left: 37%;
+  top: 57%;
+  width: 25%;
+  height: 40%;
+  z-index: 1;
+  cursor: pointer;
+  pointer-events: auto;
 }
-@keyframes cursor-blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+
+/* Solid composite pivot: all at scale(1), same box, bottom-to-top Layer 1 → 2 → 3 */
+.laptop-pivot-img {
+  position: absolute;
+  display: block;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  pointer-events: none;
+  transform-origin: bottom center;
+}
+
+/* Phase 1: Screen1 and Screen2 fade out together over 1800ms (same time, same duration); Center fades in over 1800ms — solid cross-dissolve, no ghosting */
+
+/* Layer 1 (Screen1): fade out 1→0 over 1800ms, in sync with Screen2 */
+.laptop-pivot-part-a {
+  z-index: 1;
+  opacity: 1;
+  transition: opacity 1.8s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.laptop-pivot-part-a.laptop-pivot-part-a-fade-out {
+  opacity: 0;
+}
+
+/* Layer 2 (Screen2): fade out 1→0 over 1800ms, exact same timing as Screen1 */
+.laptop-pivot-part-b {
+  z-index: 2;
+  opacity: 1;
+  transition: opacity 1.8s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.laptop-pivot-part-b.laptop-pivot-part-b-fade-out {
+  opacity: 0;
+}
+
+/* Layer 3 (Center / Incoming): fade 0→1 over the full 1800ms */
+.laptop-pivot-center {
+  z-index: 3;
+  opacity: 0;
+  transition: opacity 1.8s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.laptop-pivot-center.laptop-pivot-fade-in {
+  opacity: 1;
+}
+
+/* Lamp OFF: darken the angled and center laptop pivot pieces like other desk assets */
+.scene-dim .laptop-pivot-part-a,
+.scene-dim .laptop-pivot-part-b,
+.scene-dim .laptop-pivot-center {
+  filter: brightness(0.4) saturate(0.8);
+  transition: filter 1s ease;
+}
+
+/* Phase 2: 600ms delay so pivot is visible, then desk fades out + scales up over 1200ms (done at 1800ms) */
+#desk-scene.desk-scene,
+.desk-scene {
+  position: absolute;
+  inset: 0;
+  z-index: 10;
+  transform-origin: center center;
+  transition: opacity 1.2s cubic-bezier(0.4, 0, 0.2, 1) 600ms,
+              transform 1.2s cubic-bezier(0.4, 0, 0.2, 1) 600ms;
+}
+.desk-scene.desk-scene-zoom-out {
+  opacity: 0;
+  transform: scale(1.2);
+}
+
+/* Laptop_View_BG: background layer; same fade-in timing as Laptop_View_v1 (600ms delay, 1200ms); z below so rain can sit between */
+.laptop-view-bg-layer {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 98;
+  pointer-events: none;
+  opacity: 0;
+}
+.laptop-view-bg-layer.laptop-view-bg-layer-visible {
+  opacity: 1;
+  transition: opacity 1.2s cubic-bezier(0.4, 0, 0.2, 1) 600ms;
+}
+.laptop-view-bg-img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Laptop_View_v1: foreground; same timing as BG (600ms delay, 1200ms) */
+.laptop-view-layer {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 100;
+  pointer-events: auto;
+  opacity: 0;
+}
+.laptop-view-layer.laptop-view-layer-visible {
+  opacity: 1;
+  transition: opacity 1.2s cubic-bezier(0.4, 0, 0.2, 1) 600ms;
+}
+.laptop-view-img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  pointer-events: none;
+}
+
+.laptop-screen-content {
+  position: absolute;
+  top: 26%;
+  left: 21.8%;
+  width: 55%;
+  height: 59%;
+  background: radial-gradient(circle at 10% 0%, #262738 0%, #11111a 55%, #05060b 100%);
+  border-radius: 10px;
+  padding: 1.6%;
+  box-shadow:
+    0 0 18px rgba(0, 0, 0, 0.75),
+    inset 0 0 18px rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 99; /* behind Laptop_View_v1 PNG but above BG and rain */
+  pointer-events: none; /* grid handles actual clicks */
+}
+
+.laptop-screen-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-rows: repeat(2, 1fr);
+  width: 100%;
+  height: 100%;
+  gap: 6%;
+  padding: 4%;
+  pointer-events: auto;
+}
+
+.laptop-screen-icon {
+  all: unset;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  border-radius: 18%;
+  transition:
+    transform 0.18s ease-out,
+    filter 0.18s ease-out,
+    box-shadow 0.18s ease-out,
+    background-color 0.18s ease-out;
+}
+
+.laptop-screen-icon img {
+  max-width: 80%;
+  max-height: 80%;
+  pointer-events: auto;
+}
+
+.laptop-screen-icon:hover {
+  transform: scale(1.1);
+  filter: brightness(1.1);
+  box-shadow:
+    0 0 10px rgba(255, 191, 94, 0.35),
+    0 0 22px rgba(255, 191, 94, 0.2);
+  background-color: rgba(255, 191, 94, 0.06);
+}
+
+/* Lamp OFF: darken the zoomed laptop view using the same tone as the room/desk */
+.scene-dim .laptop-view-bg-img,
+.scene-dim .laptop-view-img {
+  filter: none;
+  transition: none;
+}
 
 .asset-notebook {
   transform-origin: top left;
@@ -354,31 +524,155 @@ body {
   pointer-events: none;
 }
 
-.rain-controls {
+/* Cloud app — Weather window */
+.laptop-screen-icon--cloud-active {
+  box-shadow:
+    0 0 0 2px rgba(120, 170, 255, 0.6),
+    0 0 16px rgba(90, 155, 255, 0.8);
+  background: radial-gradient(circle at 20% 0%, rgba(120, 170, 255, 0.3) 0%, transparent 55%);
+}
+
+.weather-app-window {
   position: absolute;
-  bottom: 4%;
-  right: 4%;
-  z-index: 50;
+  inset: 14% 10%;
+  margin: auto;
+  max-width: 80%;
+  max-height: 80%;
+  background: transparent;
+  border-radius: 0;
+  border: none;
+  box-shadow: none;
   display: flex;
-  gap: 0.5rem;
+  flex-direction: column;
+  justify-content: center;
   align-items: center;
-  padding: 0.25rem 0.5rem;
-  background: rgba(7, 10, 20, 0.8);
-  border-radius: 999px;
+  height: 100%;
+  overflow: visible;
   font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  font-size: 0.7rem;
-  color: #f5f5f5;
+  color: #2a2520;
+  pointer-events: auto;
 }
 
-.rain-controls button {
-  all: unset;
+.weather-app-header {
+  display: none;
+}
+
+.weather-app-title {
+  display: none;
+}
+
+.weather-app-close {
+  display: none;
+}
+
+.weather-app-close:hover {
+  transform: translateY(0.5px);
+  box-shadow:
+    0 0 0 1px rgba(0, 0, 0, 0.9),
+    0 0 14px rgba(255, 200, 180, 0.95);
+}
+
+.weather-app-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+  padding: 0;
+  align-items: center;
+  justify-content: center;
+}
+.weather-console {
+  position: relative;
+  width: 90%;
+  height: 90%;
+  aspect-ratio: 500 / 300;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: auto;
+}
+
+.weather-console-bg {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: contain;
+  pointer-events: none;
+}
+
+.weather-console-off-hit {
+  position: absolute;
+  left: 23.5%;
+  bottom: 34%;
+  width: 30%;
+  height: 14%;
+  background: transparent;
+  border: none;
+  padding: 0;
   cursor: pointer;
-  padding: 0.1rem 0.5rem;
-  border-radius: 999px;
-  background: rgba(120, 160, 255, 0.25);
-  color: inherit;
 }
 
-.rain-controls input[type="range"] {
-  width: 80px;
+.weather-console-close-hit {
+  position: absolute;
+  right: 22%;
+  top: 27%;
+  width: 4%;
+  height: 7%;
+  background: transparent;
+  border: none;
+  padding: 0;
+  cursor: pointer;
 }
+
+.weather-knob-hitarea {
+  position: absolute;
+  top: 55%;
+  left: 67%;
+  width: 10%;
+  height: 41px;
+  transform: translate(-50%, -50%);
+  background: transparent;
+  overflow: visible;
+  padding: 0;
+  border: none;
+  cursor: pointer;
+}
+
+.laptop-screen-grid--hidden {
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.weather-knob-needle {
+  position: absolute;
+  bottom: 50%;
+  left: 50%;
+  transform-origin: bottom center;
+  transition: transform 0.8s ease-in-out;
+  pointer-events: none;
+}
+
+.weather-knob-svg {
+  width: 6px;
+  height: 20px;
+  overflow: visible;
+}
+
+.weather-knob-hotspot {
+  position: absolute;
+  background: transparent;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+}
+
+.weather-knob-hotspot-0  { left: 60%; top: 63%; width: 20px; height: 20px; }
+.weather-knob-hotspot-1  { left: 57%; top: 58%; width: 20px; height: 20px; }
+.weather-knob-hotspot-2  { left: 56%; top: 51.6%; width: 20px; height: 20px; }
+.weather-knob-hotspot-3  { left: 57%;   top: 45%;   width: 20px; height: 20px; }
+.weather-knob-hotspot-4  { left: 61%;   top: 40%;   width: 20px; height: 20px; }
+.weather-knob-hotspot-5  { left: 65%;   top: 39%;   width: 20px; height: 20px; }
+.weather-knob-hotspot-6  { left: 69.5%; top: 40%;   width: 20px; height: 20px; }
+.weather-knob-hotspot-7  { left: 73%;   top: 45%;   width: 20px; height: 20px; }
+.weather-knob-hotspot-8  { left: 74%;   top: 51.5%; width: 20px; height: 20px; }
+.weather-knob-hotspot-9  { left: 73%;   top: 58%;   width: 20px; height: 20px; }
+.weather-knob-hotspot-10 { left: 70.2%; top: 63%;   width: 20px; height: 20px; }
