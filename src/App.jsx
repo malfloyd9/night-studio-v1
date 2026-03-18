@@ -152,6 +152,7 @@ export default function App() {
   } = useRainAudio()
   const [activeApp, setActiveApp] = useState(null) // 'Cloud' | 'Home' | etc.
   const uiClickAudioRef = useRef(null)
+  const lampTickAudioRef = useRef(null)
 
   const playUiClick = () => {
     if (!uiClickAudioRef.current && typeof Audio !== 'undefined') {
@@ -164,6 +165,13 @@ export default function App() {
   }
 
   const handleLampToggle = () => {
+    if (!lampTickAudioRef.current && typeof Audio !== 'undefined') {
+      lampTickAudioRef.current = new Audio('/audio/Tick.mp3')
+    }
+    if (lampTickAudioRef.current) {
+      lampTickAudioRef.current.currentTime = 0
+      lampTickAudioRef.current.play().catch(() => {})
+    }
     setLampOn(v => !v)
   }
 
